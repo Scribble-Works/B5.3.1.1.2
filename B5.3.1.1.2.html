@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AssignmentX Math Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --wood-brown: #5d4037;
+            --wood-grain: #795548; 
+            --mathly-blue: #00d2ff;
+            --mathly-yellow: #fbc531;
+            --mathly-red: #e84118;
+            --mathly-green: #2ecc71;
+            --glass-white: rgba(255, 255, 255, 0.95);
+            --rope-color: #a1887f;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(rgba(10, 25, 47, 0.4), rgba(10, 25, 47, 0.4)), url('background.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            overflow: hidden;
+            position: relative;
+        }
+
+        #bg-canvas { position: absolute; inset: 0; pointer-events: none; z-index: 1; opacity: 0.25; }
+
+        .character-img {
+            position: absolute; 
+            z-index: 5; 
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3));
+            animation: float 3.5s ease-in-out infinite;
+            pointer-events: none;
+        }
+        
+        #panda-main { width: 220px; top: -60px; right: -100px; --r: 12deg; transform: rotate(var(--r)); }
+        #mouse-main { width: 200px; top: -50px; left: -100px; --r: -12deg; transform: rotate(var(--r)); }
+
+        @keyframes float { 
+            0%, 100% { transform: translateY(0) rotate(var(--r)); } 
+            50% { transform: translateY(-15px) rotate(var(--r)); } 
+        }
+
+        .game-area-container {
+            display: none; 
+            width: 92%; 
+            max-width: 440px;
+            z-index: 10;
+            position: relative;
+            animation: zoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            padding-top: 40px; 
+        }
+
+        .active { display: block; }
+        @keyframes zoomIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .wood-title-banner {
+            background: linear-gradient(135deg, var(--wood-grain) 0%, var(--wood-brown) 100%);
+            border: 4px solid #3e2723;
+            border-radius: 15px 50px 20px 45px; 
+            padding: 18px 25px;
+            box-shadow: 0 12px 24px rgba(0,0,0,0.4), inset 0 2px 8px rgba(255,255,255,0.1);
+            margin-bottom: 35px; 
+            position: relative;
+            z-index: 11;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform-origin: center -100vh;
+            animation: sway 6s ease-in-out infinite;
+        }
+
+        .wood-title-banner::before, .wood-title-banner::after {
+            content: ''; position: absolute; top: -100vh; width: 8px; height: 100vh; 
+            background: repeating-linear-gradient(0deg, var(--rope-color), var(--rope-color) 5px, #8d6e63 10px);
+            border-radius: 4px; box-shadow: 2px 0 5px rgba(0,0,0,0.3); z-index: -1;
+        }
+        .wood-title-banner::before { left: 40px; }
+        .wood-title-banner::after { right: 40px; }
+
+        @keyframes sway { 0%, 100% { transform: rotate(-1deg); } 50% { transform: rotate(1deg); } }
+
+        .banner-logo {
+            width: 60px; height: 60px; object-fit: contain; position: absolute;
+            left: 20px; filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.9));
+        }
+
+        .wood-title-banner h2 {
+            font-size: 1.2rem; color: #fff9c4; font-weight: 900; text-transform: uppercase;
+            letter-spacing: 1px; text-shadow: 2px 2px 0px rgba(0,0,0,0.5); margin-left: 55px;
+        }
+
+        .card { 
+            width: 100%; background: var(--glass-white); backdrop-filter: blur(12px); 
+            border: 6px solid var(--wood-brown); border-radius: 40px; 
+            padding: 30px; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.5); 
+            position: relative; z-index: 12;
+        }
+
+        .mission-header { background: var(--wood-brown); color: white; padding: 15px; border-radius: 20px; margin-bottom: 20px; }
+        .btn-green { width: 100%; padding: 16px; border: none; border-radius: 20px; background: var(--mathly-green); color: white; font-weight: 900; font-size: 1.1rem; cursor: pointer; text-transform: uppercase; box-shadow: 0 6px 0 #27ae60; margin-bottom: 5px; transition: transform 0.1s; }
+        .btn-green:active { transform: translateY(4px); box-shadow: 0 2px 0 #27ae60; }
+        
+        .btn-tool { flex: 1; background: white; border: 2px solid var(--wood-brown); color: var(--wood-brown); padding: 12px 5px; border-radius: 12px; font-size: 0.8rem; font-weight: 800; cursor: pointer; }
+        .btn-exit { border-color: var(--mathly-red) !important; color: var(--mathly-red) !important; }
+        .tool-row { display: flex; justify-content: center; gap: 10px; margin-top: 15px; width: 100%; }
+        
+        .timer-container { width: 100%; height: 14px; background: #eee; border-radius: 10px; margin-bottom: 12px; overflow: hidden; border: 2px solid #ddd; }
+        #timer-bar { width: 100%; height: 100%; background: var(--mathly-red); transition: width 1s linear; }
+        
+        /* Modified chart frame for Shape folding */
+        .chart-frame { background: rgba(255,255,255,0.7); border: 3px solid #d7ccc8; border-radius: 20px; padding: 15px; margin: 15px 0; height: 160px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+        
+        .visual-shape { 
+            background: var(--mathly-blue); 
+            border: 3px solid var(--wood-brown); 
+            transition: all 0.5s ease;
+            position: relative;
+        }
+        
+        .fold-line {
+            position: absolute;
+            background: rgba(255,255,255,0.8);
+            border: 1px dashed var(--wood-brown);
+            display: none;
+        }
+
+        .key-badge { background: #fff9c4; border: 2px dashed #fbc02d; padding: 10px; border-radius: 12px; font-weight: 900; color: #856404; font-size: 0.9rem; margin-bottom: 12px; }
+        .question-box { background: white; border-left: 10px solid var(--mathly-blue); padding: 15px; text-align: left; font-size: 0.95rem; font-weight: 800; border-radius: 0 20px 20px 0; min-height: 80px; }
+        
+        .choice-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .btn-choice { background: white; border: 3px solid #dfe6e9; padding: 12px; border-radius: 15px; font-weight: 900; cursor: pointer; transition: 0.2s; }
+        .btn-choice:active { transform: scale(0.95); }
+
+        .level-map { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
+        .lvl-dot { width: 45px; height: 45px; border-radius: 14px; background: white; border: 3px solid #d7ccc8; display: flex; align-items: center; justify-content: center; font-weight: 900; cursor: pointer; font-size: 1.1rem; }
+        .lvl-dot.active-lvl { background: var(--mathly-yellow); color: white; border-color: #f9a825; }
+        .lvl-dot.locked { opacity: 0.4; cursor: not-allowed; }
+
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 35px; border: 6px solid var(--wood-brown); width: 85%; max-width: 380px; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <div id="scr-start" class="game-area-container active">
+        <img src="mouse.png" id="mouse-main" class="character-img" alt="Mouse">
+        <img src="panda.png" id="panda-main" class="character-img" alt="Panda">
+        <div class="wood-title-banner">
+            <img src="logo.png" class="banner-logo" alt="Logo">
+            <h2>ASSIGNMENTX - BASIC 5</h2>
+        </div>
+        <div class="card">
+            <div class="mission-header"><h1 style="font-size: 1.1rem; text-transform: uppercase; font-weight: 900;">Geometry and Measurement: Lines and Shapes</h1></div>
+            <p style="font-weight: 800; color: var(--wood-brown); margin-bottom: 25px; font-size: 0.9rem;">B5.3.1.1.2: Use paper folding with cut-out squares and rectangles to investigate sides, angles, and diagonals properties.</p>
+            <button class="btn-green" onclick="startMission()">START INVESTIGATION</button>
+            <div class="tool-row">
+                <button class="btn-tool" onclick="toggleModal(true)">Protocols</button>
+                <button class="btn-tool btn-mute" onclick="toggleAudio()">🔊 SFX: ON</button>
+                <button class="btn-tool" style="color:var(--mathly-red)" onclick="resetData()">RESET</button>
+            </div>
+            <div class="level-map" id="map-ui"></div>
+        </div>
+    </div>
+
+    <div id="scr-game" class="game-area-container">
+        <div class="wood-title-banner">
+            <img src="logo.png" class="banner-logo" alt="Logo">
+            <h2>ASSIGNMENTX - BASIC 5</h2>
+        </div>
+        <div class="card">
+            <div class="timer-container"><div id="timer-bar"></div></div>
+            <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 0.85rem; margin-bottom: 12px; color: var(--wood-brown);">
+                <div>EXP: <span id="score">0</span></div>
+                <div id="lvl-indicator">LEVEL 1</div>
+                <div>⏳ <span id="timer-text">30</span>s</div>
+            </div>
+            <div class="key-badge" id="key-ui">Investigating: Sides</div>
+            <div class="chart-frame">
+                <div id="shape-view" class="visual-shape">
+                    <div id="fold-v" class="fold-line" style="width:2px; height:100%; left:50%; top:0;"></div>
+                    <div id="fold-h" class="fold-line" style="width:100%; height:2px; left:0; top:50%;"></div>
+                    <div id="fold-d" class="fold-line" style="width:142%; height:2px; left:-21%; top:50%; transform:rotate(45deg);"></div>
+                </div>
+            </div>
+            <div class="question-box" id="question-ui">Preparing test paper...</div>
+            
+            <div class="choice-row">
+                <button class="btn-choice" onclick="submitAnswer(true)">YES / TRUE</button>
+                <button class="btn-choice" onclick="submitAnswer(false)">NO / FALSE</button>
+            </div>
+
+            <div id="feedback" style="height: 25px; margin-top: 12px; font-weight: 900; font-size: 0.95rem;"></div>
+            <div class="tool-row">
+                <button class="btn-tool" onclick="getHint()">💡 HINT</button>
+                <button class="btn-tool btn-exit" onclick="exitToMenu()">🚪 EXIT</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="scr-end" class="game-area-container">
+        <div class="card">
+            <h1 id="end-status" style="font-size: 1.8rem; margin-bottom: 15px; font-weight: 900; color: var(--wood-brown);">REPORT FILED</h1>
+            <div style="font-size: 5rem; font-weight: 900; color: var(--mathly-yellow); line-height: 1;" id="final-score">0</div>
+            <p id="end-msg" style="font-weight: 800; margin: 20px 0; color: var(--wood-brown); font-size: 1.1rem;"></p>
+            <button class="btn-green" onclick="location.reload()">RETURN TO LAB</button>
+        </div>
+    </div>
+
+    <div id="rules-modal" class="modal">
+        <div class="modal-content">
+            <h2 style="color: var(--wood-brown); margin-bottom: 20px; font-weight: 900; font-size: 1.4rem;">LAB MANUAL</h2>
+            <ul style="text-align: left; font-size: 0.9rem; line-height: 1.6; font-weight: 700; list-style: none; margin-bottom: 25px;">
+                <li>📐 <span style="color:var(--mathly-blue)">SQUARES:</span> Equal sides, right angles, diagonal 90°.</li>
+                <li>📏 <span style="color:var(--mathly-yellow)">RECTANGLES:</span> Opposites equal, right angles.</li>
+                <li>🌟 <span style="color:var(--mathly-green)">GOAL:</span> Reach 50 EXP to unlock the next level!</li>
+            </ul>
+            <button class="btn-green" onclick="toggleModal(false)">GOT IT</button>
+        </div>
+    </div>
+
+    <script>
+        const audio = { bg: new Audio("BGMSound.mp3"), correct: new Audio("correctanswer.mp3"), wrong: new Audio("wronganswer.mp3") };
+        audio.bg.loop = true;
+        let isMuted = false;
+
+        function toggleAudio() {
+            isMuted = !isMuted;
+            document.querySelectorAll('.btn-mute').forEach(b => b.innerText = isMuted ? "🔇 SFX: OFF" : "🔊 SFX: ON");
+            if(isMuted) audio.bg.pause(); else audio.bg.play().catch(()=>{});
+        }
+
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let symbols = [];
+        const MATHLY_COLORS = ["#e84118", "#fbc531", "#2ecc71", "#00d2ff"]; 
+
+        function initBG() {
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            symbols = Array.from({length: 30}, () => ({
+                x: Math.random()*canvas.width, 
+                y: Math.random()*canvas.height - canvas.height,
+                char: ['□','▭','∠','⊥'][Math.floor(Math.random()*4)],
+                size: Math.random()*25 + 20, 
+                speed: Math.random()*1.2 + 0.8, 
+                color: MATHLY_COLORS[Math.floor(Math.random()*4)]
+            }));
+        }
+        function drawBG() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            symbols.forEach(s => {
+                ctx.fillStyle = s.color; ctx.font = `900 ${s.size}px Inter`;
+                ctx.fillText(s.char, s.x, s.y);
+                s.y += s.speed; 
+                if(s.y > canvas.height + 50) { s.y = -50; s.x = Math.random()*canvas.width; }
+            });
+            requestAnimationFrame(drawBG);
+        }
+        initBG(); drawBG();
+
+        // Game Logic
+        let storageKey = 'shape_fold_b5_v1';
+        let progress = JSON.parse(localStorage.getItem(storageKey)) || { unlocked: [1] };
+        let state = { score: 0, qIdx: 1, currentLvl: 1, timer: null, currentShape: '', currentProperty: '', correctAnswer: null };
+
+        const questions = [
+            { shape: 'Square', prop: 'Sides', q: "If we fold this square in half, will all four sides be equal (congruent)?", a: true, hint: "Squares are perfectly even on all sides." },
+            { shape: 'Rectangle', prop: 'Sides', q: "Folding a rectangle in half shows all 4 sides are congruent. True or False?", a: false, hint: "Rectangles have long and short sides." },
+            { shape: 'Square', prop: 'Angles', q: "Will every corner fold perfectly into a 90-degree right angle?", a: true, hint: "Every corner of a square is a 'square corner'." },
+            { shape: 'Rectangle', prop: 'Angles', q: "Do all 4 angles of a rectangle match exactly when folded corner-to-corner?", a: true, hint: "Rectangles also have 4 right angles." },
+            { shape: 'Square', prop: 'Diagonals', q: "Fold corner to corner. Do the diagonals meet at a right angle (90°)?", a: true, hint: "Square diagonals are perpendicular." },
+            { shape: 'Rectangle', prop: 'Diagonals', q: "Fold a rectangle diagonally. Do the diagonals cross at exactly 90°?", a: false, hint: "Rectangle diagonals don't cross at right angles." }
+        ];
+
+        function startMission() {
+            if(!isMuted) audio.bg.play().catch(()=>{});
+            document.getElementById('scr-start').classList.remove('active');
+            document.getElementById('scr-game').classList.add('active');
+            state.score = 0; state.qIdx = 1;
+            document.getElementById('score').innerText = '0';
+            generateChallenge();
+        }
+
+        function renderMap() {
+            const mapUi = document.getElementById('map-ui');
+            mapUi.innerHTML = '';
+            for(let i=1; i<=4; i++) {
+                const unlocked = progress.unlocked.includes(i);
+                const dot = document.createElement('div');
+                dot.className = `lvl-dot ${unlocked ? '' : 'locked'} ${state.currentLvl === i ? 'active-lvl' : ''}`;
+                dot.innerText = unlocked ? i : '🔒';
+                if(unlocked) dot.onclick = () => { state.currentLvl = i; renderMap(); };
+                mapUi.appendChild(dot);
+            }
+            document.getElementById('lvl-indicator').innerText = `LEVEL ${state.currentLvl}`;
+        }
+        renderMap();
+
+        function generateChallenge() {
+            const qSet = questions[Math.floor(Math.random() * questions.length)];
+            state.correctAnswer = qSet.a;
+            state.currentProperty = qSet.hint;
+            
+            document.getElementById('question-ui').innerText = qSet.q;
+            document.getElementById('key-ui').innerText = `Property: ${qSet.prop}`;
+            
+            // Visual Shape Update
+            const view = document.getElementById('shape-view');
+            const foldV = document.getElementById('fold-v');
+            const foldH = document.getElementById('fold-h');
+            const foldD = document.getElementById('fold-d');
+            
+            foldV.style.display = 'none'; foldH.style.display = 'none'; foldD.style.display = 'none';
+
+            if(qSet.shape === 'Square') {
+                view.style.width = '100px'; view.style.height = '100px';
+                if(qSet.prop === 'Sides') foldV.style.display = 'block';
+                if(qSet.prop === 'Diagonals') foldD.style.display = 'block';
+            } else {
+                view.style.width = '140px'; view.style.height = '80px';
+                if(qSet.prop === 'Sides') foldH.style.display = 'block';
+            }
+
+            document.getElementById('feedback').innerText = '';
+            runTimer();
+        }
+
+        function runTimer() {
+            clearInterval(state.timer);
+            let t = 30;
+            state.timer = setInterval(() => {
+                t--;
+                document.getElementById('timer-text').innerText = t;
+                document.getElementById('timer-bar').style.width = (t/30)*100 + "%";
+                if(t <= 0) submitAnswer(null);
+            }, 1000);
+        }
+
+        function submitAnswer(userChoice) {
+            clearInterval(state.timer);
+            const fb = document.getElementById('feedback');
+            const isCorrect = userChoice === state.correctAnswer;
+
+            if(isCorrect) {
+                state.score += 10;
+                fb.innerText = "✓ ACCURATE OBSERVATION!"; fb.style.color = "var(--mathly-green)";
+                if(!isMuted) audio.correct.play();
+            } else {
+                fb.innerText = "✗ FOLD ERROR! CHECK PROPERTIES."; fb.style.color = "var(--mathly-red)";
+                if(!isMuted) audio.wrong.play();
+            }
+
+            document.getElementById('score').innerText = state.score;
+            setTimeout(() => {
+                if(state.qIdx < 8) { state.qIdx++; generateChallenge(); } else { endGame(); }
+            }, 1500);
+        }
+
+        function endGame() {
+            document.getElementById('scr-game').classList.remove('active');
+            document.getElementById('scr-end').classList.add('active');
+            document.getElementById('final-score').innerText = state.score;
+            const msg = document.getElementById('end-msg');
+            if(state.score >= 50) {
+                msg.innerText = "Expert Inspector! You've mastered shape folding.";
+                if(state.currentLvl < 4 && !progress.unlocked.includes(state.currentLvl + 1)) {
+                    progress.unlocked.push(state.currentLvl + 1);
+                    localStorage.setItem(storageKey, JSON.stringify(progress));
+                }
+            } else { msg.innerText = "The lab needs more precise data. Try again!"; }
+        }
+
+        function getHint() {
+            document.getElementById('feedback').innerText = `HINT: ${state.currentProperty}`;
+            document.getElementById('feedback').style.color = "var(--mathly-yellow)";
+        }
+
+        function toggleModal(s) { document.getElementById('rules-modal').style.display = s ? 'flex' : 'none'; }
+        function exitToMenu() { if(confirm("Abandon Mission?")) location.reload(); }
+        function resetData() { if(confirm("Reset progress?")) { localStorage.removeItem(storageKey); location.reload(); } }
+        window.addEventListener('resize', initBG);
+    </script>
+</body>
+</html>
